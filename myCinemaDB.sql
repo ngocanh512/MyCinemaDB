@@ -1,5 +1,5 @@
 CREATE DATABASE myCinemaDB;
-
+-- MyCinemaDB - Cinema Management Database
 USE myCinemaDB;
 
 -- 1. Bảng RAP_PHIM
