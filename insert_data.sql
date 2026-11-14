@@ -5,11 +5,11 @@ START TRANSACTION;
 
 -- 1. RAP_PHIM
 INSERT INTO RAP_PHIM (MaRap, TenRap, DiaChi, Hotline, MaQuanLy) VALUES
-('R01', 'Beta Cinemas Ung Văn Khiêm', '26 Ung Văn Khiêm, Phường Thạnh Mỹ Tây, TPHCM.', '0969874873', NULL),
+('R01', 'Beta Cinemas Ung Văn Khiêm', '26 Ung Văn Khiêm, Phường Thạnh Mỹ Tây, TPHCM', '0969874873', NULL),
 ('R02', 'Beta Cinemas Trần Quang Khải', '62 Trần Quang Khải, Phường Tân Định, TPHCM', '02873009079', NULL),
-('R03', 'Beta Cinemas Nowzone', '235 Nguyễn Văn Cừ, Phường Cầu Ông Lãnh, TPHCM.', '1900636807', NULL),
-('R04', 'Beta Cinemas Quang Trung', '645 Quang Trung, phường Thông Tây Hội, TP.HCM', '0706075509', NULL),
-('R05', 'Beta Cinemas Hồ Tràm', 'The Grand Hồ Tràm Strip, xã Hồ Tràm, TP.HCM', '02543788601', NULL);
+('R03', 'Beta Cinemas Nowzone', '235 Nguyễn Văn Cừ, Phường Cầu Ông Lãnh, TPHCM', '1900636807', NULL),
+('R04', 'Beta Cinemas Quang Trung', '645 Quang Trung, Phường Thông Tây Hội, TPHCM', '0706075509', NULL),
+('R05', 'Beta Cinemas Hồ Tràm', 'The Grand Hồ Tràm Strip, Xã Hồ Tràm, TPHCM', '02543788601', NULL);
 
 -- 2. THE_LOAI
 INSERT INTO THE_LOAI (MaTheLoai, TenTheLoai) VALUES
@@ -22,8 +22,8 @@ INSERT INTO THE_LOAI (MaTheLoai, TenTheLoai) VALUES
 
 -- 3. SAN_PHAM
 INSERT INTO SAN_PHAM (MaSanPham, TenSanPham, GiaBan, SoLuongTon) VALUES
-('SP001', 'Combo 2 nước và 1 bắp', 78000, 100),
-('SP002', 'Combo 1 nước và 1 bắp', 98000, 120),
+('SP001', 'Combo 1 nước và 1 bắp', 78000, 100),
+('SP002', 'Combo 2 nước và 1 bắp', 98000, 120),
 ('SP003', 'Bắp rang bơ lớn', 58000, 80),
 ('SP004', 'Sting', 25000, 60),
 ('SP005', 'Pepsi lớn', 38000, 150);
@@ -173,7 +173,7 @@ VALUES
 ('PH002', 'Bò sữa bay', 105, 'Một trang trại đang nghiên cứu công thức sữa “bí mật” có khả năng chữa lành và trẻ hóa.', 'T13', '2026-11-22', 'NV002'),
 ('PH003', 'Trại buôn người', 95, 'Vì cứu em gái, Ny cùng bạn thân bị bắt làm nô dịch trong sào huyệt lừa đảo.', 'T18', '2026-11-25', 'NV003'),
 ('PH004', 'Shaun The Sheep:"Quái Lạ" Ghé Nhà', 110, 'Cả đàn cừu lên đường tìm kiếm Ông chủ và đối mặt với một chuyến phiêu lưu.', 'P', '2026-11-27', 'NV004'),
-('PH005', 'Khi Thần Chết Đổ Chuông', 115, 'Linh hồn không đầu gieo rắc nỗi kinh hoàng tại vùng đất Belitung', 'T18', '2026-11-29', 'NV005');
+('PH005', 'Khi Thần Chết Đổ Chuông', 115, 'Linh hồn không đầu gieo rắc nỗi kinh hoàng tại vùng đất Belitung.', 'T18', '2026-11-29', 'NV005');
 
 -- 17. THUOC_THE_LOAI
 INSERT INTO THUOC_THE_LOAI (MaPhim, MaTheLoai) VALUES
