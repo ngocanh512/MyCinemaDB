@@ -67,10 +67,10 @@ CREATE TABLE KHACH_HANG(
 		CONSTRAINT cnm_gioitinhkhach
         CHECK (GioiTinh IN ('Nam', 'Nữ', 'Khác')),
     NgaySinh DATE,
-    SoDienThoai VARCHAR(10),
+    SoDienThoai VARCHAR(10) UNIQUE,
 		CONSTRAINT cnm_sdt
         CHECK(SoDienThoai REGEXP '^0[0-9]{9}$'),
-    Email VARCHAR(100),
+    Email VARCHAR(100) UNIQUE,
 		CONSTRAINT cnm_email
         CHECK (Email LIKE '_%@gmail.com')
 );
@@ -201,6 +201,8 @@ CREATE TABLE SUAT_CHIEU (
     MaRap VARCHAR(10) NOT NULL,
     MaPhong VARCHAR(10) NOT NULL,
     MaQuanLy VARCHAR(10),
+    
+    UNIQUE (MaSuatChieu, MaRap, MaPhong),
 
     FOREIGN KEY (MaPhim)
         REFERENCES PHIM(MaPhim)
@@ -268,6 +270,8 @@ CREATE TABLE NHAN_VIEN_VAN_HANH (
 CREATE TABLE THE_THANH_VIEN (
     SoThe VARCHAR(10) PRIMARY KEY,
     HangThe VARCHAR(50) NOT NULL,
+		CONSTRAINT cnm_hangthe
+		CHECK (HangThe IN ('STANDARD', 'VIP')),
     NgayKichHoat DATE NOT NULL,
     DiemKhaDung INT NOT NULL DEFAULT 0,
 		CONSTRAINT cnm_diemkhadung
@@ -331,9 +335,11 @@ CREATE TABLE VE (
     MaPhong VARCHAR(10) NOT NULL,
     MaGhe VARCHAR(10) NOT NULL,
     MaHoaDon VARCHAR(10) NOT NULL,
-
-    FOREIGN KEY (MaSuatChieu)
-        REFERENCES SUAT_CHIEU(MaSuatChieu),
+    
+    UNIQUE (MaSuatChieu, MaRap, MaPhong, MaGhe),
+        
+	FOREIGN KEY (MaSuatChieu, MaRap, MaPhong)
+		REFERENCES SUAT_CHIEU(MaSuatChieu, MaRap, MaPhong),
 
     FOREIGN KEY (MaRap, MaPhong, MaGhe)
         REFERENCES GHE(MaRap, MaPhong, MaGhe),
@@ -382,7 +388,7 @@ CREATE TABLE TRUC (
     MaNhanVien VARCHAR(10),
     NgayLamViec DATE NOT NULL,
 
-    PRIMARY KEY (MaCa, MaNhanVien),
+    PRIMARY KEY (MaCa, MaNhanVien, NgayLamViec),
 
     FOREIGN KEY (MaCa)
         REFERENCES CA_LAM_VIEC(MaCa),
