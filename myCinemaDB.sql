@@ -1,5 +1,5 @@
 CREATE DATABASE myCinemaDB;
--- MyCinemaDB - Cinema Management Database
+
 USE myCinemaDB;
 
 -- 1. Bảng RAP_PHIM
@@ -196,7 +196,7 @@ CREATE TABLE SUAT_CHIEU (
 		CONSTRAINT cnm_dinhdang
         CHECK (DinhDang IN ('2D', '3D')),
     HinhThucNgonNgu VARCHAR(50) NOT NULL
-		CHECK (HinhThucNgonNgu IN ('Phụ đề Việt', 'Phụ đề Anh', 'Lồng tiếng Việt', 'Không phụ đề')),
+		CHECK (HinhThucNgonNgu IN ('Lồng tiếng', 'Phụ đề')),
     MaPhim VARCHAR(10) NOT NULL,
     MaRap VARCHAR(10) NOT NULL,
     MaPhong VARCHAR(10) NOT NULL,
@@ -272,9 +272,9 @@ CREATE TABLE THE_THANH_VIEN (
     DiemKhaDung INT NOT NULL DEFAULT 0,
 		CONSTRAINT cnm_diemkhadung
         CHECK (DiemKhaDung >= 0),
-    DiemCanTichLuy INT NOT NULL DEFAULT 0,
-		CONSTRAINT cnm_diemcantichluy
-        CHECK (DiemCanTichLuy >= 0),
+    DiemTichLuy INT NOT NULL DEFAULT 0,
+		CONSTRAINT cnm_diemtichluy
+        CHECK (DiemTichLuy >= 0),
     MaKhachHang VARCHAR(10) NOT NULL UNIQUE,
 
     FOREIGN KEY (MaKhachHang)
