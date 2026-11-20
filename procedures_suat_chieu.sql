@@ -194,3 +194,10 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+-- Chạy từng CALL sau khi nạp insert_data.sql. DEMO21 là suất chưa có vé.
+-- CALL sp_ThemSuatChieu('DEMO21', '2026-12-01', '11:15:00', '13:15:00', '2D', 'Phụ đề', 'PH001', 'R01', 'P01', NULL);
+-- CALL sp_SuaSuatChieu('DEMO21', '2026-12-01', '11:14:00', '13:14:00', '2D', 'Phụ đề', 'PH001', 'R01', 'P01', NULL);
+-- CALL sp_SuaSuatChieu('DEMO21', '2026-12-01', '11:30:00', '13:30:00', '2D', 'Phụ đề', 'PH001', 'R01', 'P01', NULL);
+-- CALL sp_XoaSuatChieu('SC001');
+-- CALL sp_XoaSuatChieu('DEMO21');
