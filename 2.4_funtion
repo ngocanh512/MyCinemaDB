@@ -1,0 +1,290 @@
+USE myCinemaDB;
+DELIMITER $$
+
+-- =====================================================================
+-- Hàm tỷ lệ sử dụng phòng
+-- fn_TyLeSuDungPhong(p_MaRap, p_MaPhong, p_Ngay)
+--
+-- Trả về % thời gian phòng được dùng trong giờ hoạt động của ngày p_Ngay.
+-- Thời gian của ngày p_Ngay gồm:
+--   (1) các suất có NgayChieu = p_Ngay (phần nằm trong ngày p_Ngay), và
+--   (2) phần "lố" qua nửa đêm của các suất NGÀY TRƯỚC (GioKetThuc < GioBatDau),
+--       tức đoạn từ 00:00 đến giờ kết thúc của suất đó.
+-- Phần lố của suất p_Ngay sang ngày sau thuộc về ngày sau, nên một suất
+-- không bao giờ bị tính hai lần giữa hai ngày.
+--
+-- Giờ hoạt động là hằng số v_gioMo / v_gioDong (tính bằng phút từ 00:00).
+-- Mặc định 00:00 -> 24:00 (1440 phút) để phần lố sau nửa đêm được tính;
+-- nếu đặt v_gioMo > 0 thì phần lố nằm trước giờ mở cửa sẽ bị loại ra.
+--
+-- Thông tin phụ ghi vào biến phiên:
+--   @tong_phut_chieu, @phut_lo_tu_ngay_truoc,
+--   @so_khoang_nghi_ngan, @chi_tiet_khoang_nghi
+-- =====================================================================
+
+DROP FUNCTION IF EXISTS fn_TyLeSuDungPhong$$
+
+CREATE FUNCTION fn_TyLeSuDungPhong(
+    p_MaRap   VARCHAR(10),
+    p_MaPhong VARCHAR(10),
+    p_Ngay    DATE
+)
+RETURNS DECIMAL(5,2)
+READS SQL DATA
+BEGIN
+    -- Hằng số giờ hoạt động (tính bằng phút từ 00:00 của ngày p_Ngay)
+    DECLARE v_gioMo        INT DEFAULT 0;      -- 00:00
+    DECLARE v_gioDong      INT DEFAULT 1440;   -- 24:00
+    DECLARE v_nghiToiThieu INT DEFAULT 15;     -- ngưỡng khoảng nghỉ (phút)
+
+    -- Biến phục vụ con trỏ
+    DECLARE v_done INT DEFAULT 0;
+    DECLARE v_bd   INT;     -- phút bắt đầu, tính so với 00:00 của p_Ngay (có thể âm)
+    DECLARE v_kt   INT;     -- phút kết thúc, tính so với 00:00 của p_Ngay
+
+    -- Biến tính toán
+    DECLARE v_soPhong        INT DEFAULT 0;
+    DECLARE v_tongPhut       INT DEFAULT 0;    -- tổng phút chiếu nằm trong giờ hoạt động
+    DECLARE v_phutNgayTruoc  INT DEFAULT 0;    -- trong đó, số phút lố từ suất ngày trước
+    DECLARE v_daTinhDen      INT;              -- mốc phút đã được cộng (tránh cộng trùng)
+    DECLARE v_cuoiMax        INT DEFAULT 0;    -- giờ kết thúc muộn nhất của các suất trước
+    DECLARE v_coSuatTruoc    INT DEFAULT 0;
+    DECLARE v_s              INT;
+    DECLARE v_e              INT;
+    DECLARE v_nghi           INT;
+    DECLARE v_soNghiNgan     INT DEFAULT 0;
+    DECLARE v_ghiChu         VARCHAR(1000) DEFAULT NULL;
+
+    -- Con trỏ duyệt các suất theo thời điểm bắt đầu:
+    --   * suất của ngày p_Ngay
+    --   * suất của ngày hôm trước có qua nửa đêm (GioKetThuc < GioBatDau)
+    -- Mốc thời gian quy về phút so với 00:00 của p_Ngay nên suất hôm trước có BD < 0
+    DECLARE cur_suat CURSOR FOR
+        SELECT (DATEDIFF(NgayChieu, p_Ngay) * 1440) + (TIME_TO_SEC(GioBatDau)  DIV 60) AS BD,
+               (DATEDIFF(NgayChieu, p_Ngay) * 1440) + (TIME_TO_SEC(GioKetThuc) DIV 60) AS KT
+        FROM SUAT_CHIEU
+        WHERE MaRap = p_MaRap
+          AND MaPhong = p_MaPhong
+          AND (   NgayChieu = p_Ngay
+               OR (NgayChieu = DATE_SUB(p_Ngay, INTERVAL 1 DAY)
+                   AND GioKetThuc < GioBatDau))
+        ORDER BY BD;
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_done = 1;
+
+    -- ---------- 1. KIỂM TRA THAM SỐ ĐẦU VÀO ----------
+    IF p_MaRap IS NULL OR TRIM(p_MaRap) = ''
+       OR p_MaPhong IS NULL OR TRIM(p_MaPhong) = '' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Mã rạp và mã phòng không được để trống';
+    END IF;
+
+    IF p_Ngay IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Ngày không được để NULL';
+    END IF;
+
+    SELECT COUNT(*) INTO v_soPhong
+    FROM PHONG_CHIEU
+    WHERE MaRap = p_MaRap AND MaPhong = p_MaPhong;
+
+    IF v_soPhong = 0 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Phòng chiếu không tồn tại';
+    END IF;
+
+    -- ---------- 2. DUYỆT CON TRỎ (LOOP) ----------
+    SET v_daTinhDen = v_gioMo;
+
+    OPEN cur_suat;
+
+    lap_suat: LOOP
+        FETCH cur_suat INTO v_bd, v_kt;
+
+        IF v_done = 1 THEN
+            LEAVE lap_suat;
+        END IF;
+
+        -- Suất qua nửa đêm: giờ kết thúc nhỏ hơn giờ bắt đầu thì cộng thêm 24h.
+        -- Với suất hôm trước, kết quả chính là giờ kết thúc nằm trong ngày p_Ngay.
+        IF v_kt < v_bd THEN
+            SET v_kt = v_kt + 1440;
+        END IF;
+
+        -- 2a. Phát hiện khoảng nghỉ ngắn / chồng lấn so với suất trước
+        IF v_coSuatTruoc = 1 THEN
+            SET v_nghi = v_bd - v_cuoiMax;
+
+            IF v_nghi < 0 THEN
+                SET v_soNghiNgan = v_soNghiNgan + 1;
+                SET v_ghiChu = CONCAT_WS('; ', v_ghiChu,
+                    CONCAT('Chồng lấn ', ABS(v_nghi), ' phút tại ',
+                           TIME_FORMAT(SEC_TO_TIME(v_bd * 60), '%H:%i')));
+            ELSEIF v_nghi < v_nghiToiThieu THEN
+                SET v_soNghiNgan = v_soNghiNgan + 1;
+                SET v_ghiChu = CONCAT_WS('; ', v_ghiChu,
+                    CONCAT('Nghỉ ', v_nghi, ' phút (',
+                           TIME_FORMAT(SEC_TO_TIME(v_cuoiMax * 60), '%H:%i'), ' - ',
+                           TIME_FORMAT(SEC_TO_TIME(v_bd * 60), '%H:%i'), ')'));
+            END IF;
+        END IF;
+
+        -- 2b. Cộng số phút chiếu nằm trong giờ hoạt động, không cộng trùng
+        --     (với suất hôm trước, v_bd < 0 nên phần cộng chỉ từ giờ mở cửa trở đi)
+        SET v_s = GREATEST(v_bd, v_daTinhDen);
+        SET v_e = LEAST(v_kt, v_gioDong);
+
+        IF v_e > v_s THEN
+            SET v_tongPhut  = v_tongPhut + (v_e - v_s);
+            SET v_daTinhDen = v_e;
+
+            IF v_bd < 0 THEN
+                SET v_phutNgayTruoc = v_phutNgayTruoc + (v_e - v_s);
+            END IF;
+        END IF;
+
+        -- 2c. Cập nhật mốc kết thúc muộn nhất
+        IF v_coSuatTruoc = 0 OR v_kt > v_cuoiMax THEN
+            SET v_cuoiMax = v_kt;
+        END IF;
+        SET v_coSuatTruoc = 1;
+    END LOOP lap_suat;
+
+    CLOSE cur_suat;
+
+    -- ---------- 3. GHI NHẬN KẾT QUẢ PHỤ ----------
+    SET @so_khoang_nghi_ngan  = v_soNghiNgan;
+    SET @chi_tiet_khoang_nghi = COALESCE(v_ghiChu, 'Không có');
+    SET @tong_phut_chieu      = v_tongPhut;
+    SET @phut_lo_tu_ngay_truoc = v_phutNgayTruoc;
+
+    -- ---------- 4. TRẢ VỀ % THỜI GIAN SỬ DỤNG ----------
+    RETURN ROUND(v_tongPhut * 100 / (v_gioDong - v_gioMo), 2);
+END$$
+
+
+-- =====================================================================
+-- Hàm tìm dãy ghế trống (giữ nguyên)
+-- =====================================================================
+
+DROP FUNCTION IF EXISTS fn_TimDayGheTrong$$
+
+CREATE FUNCTION fn_TimDayGheTrong(
+    p_MaSuatChieu VARCHAR(10),
+    p_SoGhe       INT
+)
+RETURNS VARCHAR(10)
+READS SQL DATA
+BEGIN
+    -- Biến phục vụ con trỏ
+    DECLARE v_done   INT DEFAULT 0;
+    DECLARE v_maGhe  VARCHAR(10);
+    DECLARE v_hang   VARCHAR(10);
+    DECLARE v_so     INT;
+    DECLARE v_daBan  INT;
+
+    -- Biến tính toán
+    DECLARE v_soSuat     INT DEFAULT 0;
+    DECLARE v_batDau     DATETIME;
+    DECLARE v_hangTruoc  VARCHAR(10) DEFAULT NULL;
+    DECLARE v_soTruoc    INT DEFAULT NULL;
+    DECLARE v_dem        INT DEFAULT 0;        -- số ghế trống liền nhau đang đếm
+    DECLARE v_gheDauDay  VARCHAR(10) DEFAULT NULL;
+    DECLARE v_ketQua     VARCHAR(10) DEFAULT NULL;
+
+    -- Con trỏ duyệt ghế của phòng theo hàng và số ghế,
+    -- đối chiếu (LEFT JOIN) với vé đã bán của suất chiếu
+    DECLARE cur_ghe CURSOR FOR
+        SELECT g.MaGhe,
+               LEFT(g.MaGhe, 1)                          AS Hang,
+               CAST(SUBSTRING(g.MaGhe, 2) AS UNSIGNED)   AS So,
+               (v.MaVe IS NOT NULL)                      AS DaBan
+        FROM SUAT_CHIEU sc
+        JOIN GHE g
+          ON g.MaRap = sc.MaRap AND g.MaPhong = sc.MaPhong
+        LEFT JOIN VE v
+          ON v.MaSuatChieu = sc.MaSuatChieu
+         AND v.MaRap = g.MaRap
+         AND v.MaPhong = g.MaPhong
+         AND v.MaGhe = g.MaGhe
+        WHERE sc.MaSuatChieu = p_MaSuatChieu
+        ORDER BY Hang, So;
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_done = 1;
+
+    -- ---------- 1. KIỂM TRA THAM SỐ ĐẦU VÀO ----------
+    IF p_MaSuatChieu IS NULL OR TRIM(p_MaSuatChieu) = '' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Mã suất chiếu không được để trống';
+    END IF;
+
+    IF p_SoGhe IS NULL OR p_SoGhe < 1 OR p_SoGhe > 10 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Số ghế phải nằm trong khoảng từ 1 đến 10';
+    END IF;
+
+    SELECT COUNT(*) INTO v_soSuat
+    FROM SUAT_CHIEU
+    WHERE MaSuatChieu = p_MaSuatChieu;
+
+    IF v_soSuat = 0 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Suất chiếu không tồn tại';
+    END IF;
+
+    SELECT TIMESTAMP(NgayChieu, GioBatDau) INTO v_batDau
+    FROM SUAT_CHIEU
+    WHERE MaSuatChieu = p_MaSuatChieu;
+
+    IF v_batDau <= NOW() THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Suất chiếu đã bắt đầu hoặc đã chiếu xong';
+    END IF;
+
+    -- ---------- 2. DUYỆT CON TRỎ (LOOP) ----------
+    OPEN cur_ghe;
+
+    lap_ghe: LOOP
+        FETCH cur_ghe INTO v_maGhe, v_hang, v_so, v_daBan;
+
+        IF v_done = 1 THEN
+            LEAVE lap_ghe;
+        END IF;
+
+        IF v_daBan = 1 THEN
+            -- Ghế đã có vé: đứt dãy
+            SET v_dem = 0;
+            SET v_gheDauDay = NULL;
+        ELSE
+            IF v_hangTruoc IS NULL OR v_hang <> v_hangTruoc THEN
+                -- Đổi sang hàng mới: đếm lại từ đầu
+                SET v_dem = 1;
+                SET v_gheDauDay = v_maGhe;
+            ELSEIF v_dem > 0 AND v_so = v_soTruoc + 1 THEN
+                -- Ghế trống liền kề ghế trước: kéo dài dãy
+                SET v_dem = v_dem + 1;
+            ELSE
+                -- Ghế trước đã bán hoặc số ghế bị nhảy cóc: bắt đầu dãy mới
+                SET v_dem = 1;
+                SET v_gheDauDay = v_maGhe;
+            END IF;
+        END IF;
+
+        SET v_hangTruoc = v_hang;
+        SET v_soTruoc   = v_so;
+
+        -- Đủ số ghế yêu cầu thì dừng
+        IF v_dem >= p_SoGhe THEN
+            SET v_ketQua = v_gheDauDay;
+            LEAVE lap_ghe;
+        END IF;
+    END LOOP lap_ghe;
+
+    CLOSE cur_ghe;
+
+    RETURN v_ketQua;
+END$$
+
+DELIMITER ;
+SELECT fn_TyLeSuDungPhong('R01', 'P01', '2026-12-01') AS TyLe_01_12; -- 8.33
+SELECT fn_TimDayGheTrong('SC004', 1); -- D03
