@@ -194,7 +194,7 @@ CREATE TABLE SUAT_CHIEU (
     GioKetThuc TIME NOT NULL,
     DinhDang VARCHAR(20) NOT NULL,
 		CONSTRAINT cnm_dinhdang
-        CHECK (DinhDang IN ('2D', '3D')),
+        CHECK (DinhDang IN ('2D', '3D', 'IMAX')),
     HinhThucNgonNgu VARCHAR(50) NOT NULL
 		CHECK (HinhThucNgonNgu IN ('Lồng tiếng', 'Phụ đề')),
     MaPhim VARCHAR(10) NOT NULL,
