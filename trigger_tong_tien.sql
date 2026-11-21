@@ -1,0 +1,84 @@
+USE myCinemaDB;
+
+DROP TRIGGER IF EXISTS THEM_VE;
+DROP TRIGGER IF EXISTS SUA_VE;
+DROP TRIGGER IF EXISTS XOA_VE;
+DROP TRIGGER IF EXISTS THEM_SANPHAM;
+DROP TRIGGER IF EXISTS SUA_SANPHAM;
+DROP TRIGGER IF EXISTS XOA_SANPHAM;
+DROP PROCEDURE IF EXISTS TinhLaiTongTien;
+
+DELIMITER $$
+
+
+CREATE PROCEDURE TinhLaiTongTien(
+    IN p_MaHoaDon VARCHAR(10)
+)
+BEGIN
+    UPDATE HOA_DON
+    SET TongTien =
+        -- Tổng tiền vé của hóa đơn
+        (
+            SELECT COALESCE(SUM(GiaVe), 0)
+            FROM VE
+            WHERE MaHoaDon = p_MaHoaDon
+        )
+        +
+        -- Tổng tiền sản phẩm của hóa đơn
+        (
+            SELECT COALESCE(SUM(SoLuong * DonGia), 0)
+            FROM BAO_GOM
+            WHERE MaHoaDon = p_MaHoaDon
+        )
+    WHERE MaHoaDon = p_MaHoaDon;
+END$$
+
+CREATE TRIGGER THEM_VE 
+AFTER INSERT ON VE
+FOR EACH ROW
+BEGIN
+    CALL TinhLaiTongTien(NEW.MaHoaDon);
+END$$
+
+CREATE TRIGGER SUA_VE
+AFTER UPDATE ON VE
+FOR EACH ROW
+BEGIN
+    CALL TinhLaiTongTien(OLD.MaHoaDon);
+    IF NOT (OLD.MaHoaDon <=> NEW.MaHoaDon) THEN
+        CALL TinhLaiTongTien(NEW.MaHoaDon);
+    END IF;
+END$$
+
+CREATE TRIGGER XOA_VE 
+AFTER DELETE ON VE
+FOR EACH ROW
+BEGIN
+    CALL TinhLaiTongTien(OLD.MaHoaDon);
+END$$
+
+CREATE TRIGGER THEM_SANPHAM 
+AFTER INSERT ON BAO_GOM
+FOR EACH ROW
+BEGIN
+    CALL TinhLaiTongTien(NEW.MaHoaDon);
+END$$
+
+CREATE TRIGGER SUA_SANPHAM 
+AFTER UPDATE ON BAO_GOM
+FOR EACH ROW
+BEGIN
+    CALL TinhLaiTongTien(OLD.MaHoaDon);
+    IF NOT (OLD.MaHoaDon <=> NEW.MaHoaDon) THEN
+        CALL TinhLaiTongTien(NEW.MaHoaDon);
+    END IF;
+END$$
+
+CREATE TRIGGER XOA_SANPHAM 
+AFTER DELETE ON BAO_GOM
+FOR EACH ROW
+BEGIN
+    CALL TinhLaiTongTien(OLD.MaHoaDon);
+END$$
+
+DELIMITER ;
