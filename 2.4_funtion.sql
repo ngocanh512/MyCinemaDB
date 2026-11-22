@@ -1,5 +1,4 @@
 
-
 USE myCinemaDB;
 
 DELIMITER $$
