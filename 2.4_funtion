@@ -114,13 +114,7 @@ BEGIN
         -- 2a. Phát hiện khoảng nghỉ ngắn / chồng lấn so với suất trước
         IF v_coSuatTruoc = 1 THEN
             SET v_nghi = v_bd - v_cuoiMax;
-
-            IF v_nghi < 0 THEN
-                SET v_soNghiNgan = v_soNghiNgan + 1;
-                SET v_ghiChu = CONCAT_WS('; ', v_ghiChu,
-                    CONCAT('Chồng lấn ', ABS(v_nghi), ' phút tại ',
-                           TIME_FORMAT(SEC_TO_TIME(v_bd * 60), '%H:%i')));
-            ELSEIF v_nghi < v_nghiToiThieu THEN
+            IF v_nghi < v_nghiToiThieu THEN
                 SET v_soNghiNgan = v_soNghiNgan + 1;
                 SET v_ghiChu = CONCAT_WS('; ', v_ghiChu,
                     CONCAT('Nghỉ ', v_nghi, ' phút (',
@@ -284,6 +278,9 @@ BEGIN
 
     RETURN v_ketQua;
 END$$
+DELIMITER ;
+
+COMMIT;
 
 DELIMITER ;
 SELECT fn_TyLeSuDungPhong('R01', 'P01', '2026-12-01') AS TyLe_01_12; -- 8.33
