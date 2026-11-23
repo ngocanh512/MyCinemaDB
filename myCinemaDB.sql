@@ -321,7 +321,25 @@ CREATE TABLE HOA_DON (
         REFERENCES KHUYEN_MAI(MaKhuyenMai)
 );
 
--- 24. Bảng VE
+-- 24. Bang GIA_VE
+CREATE TABLE BANG_GIA_VE (
+    DinhDang VARCHAR(20),
+    LoaiGhe VARCHAR(20),
+    DonGia INT NOT NULL,
+
+    CONSTRAINT cnm_dinhdang_gia
+        CHECK (DinhDang IN ('2D', '3D', 'IMAX')),
+
+    CONSTRAINT cnm_loaighe_gia
+        CHECK (LoaiGhe IN ('Thường', 'Đôi', 'VIP')),
+
+    CONSTRAINT cnm_dongia_gia
+        CHECK (DonGia > 0),
+
+    PRIMARY KEY (DinhDang, LoaiGhe)
+);
+
+-- 25. Bảng VE
 CREATE TABLE VE (
     MaVe VARCHAR(10) PRIMARY KEY,
     GiaVe INT NOT NULL ,
@@ -330,6 +348,11 @@ CREATE TABLE VE (
     HinhThucMua VARCHAR(30) NOT NULL,
 		CONSTRAINT cnm_hinhthucmua
         CHECK (HinhThucMua IN ('Trực tuyến', 'Trực tiếp')),
+    
+    ThoiGianDat DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    DinhDang VARCHAR(20) NOT NULL,
+    LoaiGhe VARCHAR(20) NOT NULL,
+	
     MaSuatChieu VARCHAR(10) NOT NULL,
     MaRap VARCHAR(10) NOT NULL,
     MaPhong VARCHAR(10) NOT NULL,
@@ -345,10 +368,13 @@ CREATE TABLE VE (
         REFERENCES GHE(MaRap, MaPhong, MaGhe),
 
     FOREIGN KEY (MaHoaDon)
-        REFERENCES HOA_DON(MaHoaDon)
+        REFERENCES HOA_DON(MaHoaDon),
+	
+    FOREIGN KEY (DinhDang, LoaiGhe)
+		REFERENCES BANG_GIA_VE(DinhDang, LoaiGhe)
 );
 
--- 25. Bảng BAO_GOM
+-- 26. Bảng BAO_GOM
 CREATE TABLE BAO_GOM (
     MaHoaDon VARCHAR(10) NOT NULL,
     MaSanPham VARCHAR(10) NOT NULL,
@@ -368,7 +394,7 @@ CREATE TABLE BAO_GOM (
         REFERENCES SAN_PHAM(MaSanPham)
 );
 
--- 26. Bảng SO_HUU
+-- 27. Bảng SO_HUU
 CREATE TABLE SO_HUU (
     MaKhachHang VARCHAR(10),
     MaKhuyenMai VARCHAR(10),
@@ -382,7 +408,7 @@ CREATE TABLE SO_HUU (
         REFERENCES KHUYEN_MAI(MaKhuyenMai)
 );
 
--- 27. Bảng TRUC
+-- 28. Bảng TRUC
 CREATE TABLE TRUC (
     MaCa VARCHAR(10),
     MaNhanVien VARCHAR(10),
