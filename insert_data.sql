@@ -30,23 +30,30 @@ INSERT INTO SAN_PHAM (MaSanPham, TenSanPham, GiaBan, SoLuongTon) VALUES
 
 -- 4. KHUYEN_MAI
 INSERT INTO KHUYEN_MAI
-    (MaKhuyenMai, TenChuongTrinh, NgayBatDau, NgayKetThuc, LoaiKhuyenMai, DieuKien)
+    (MaKhuyenMai, TenChuongTrinh, NgayBatDau, NgayKetThuc,
+     LoaiKhuyenMai, DieuKien, TyLeGiam, PhamViApDung)
 VALUES
-('KM001', 'Thứ Hai vui vẻ', '2026-01-01', '2026-12-31', 'Giảm giá vé', 'Áp dụng cho suất chiếu thứ Hai'),
-('KM002', 'Sinh nhật thành viên', '2026-01-01', '2026-12-31', 'Quà tặng', 'Thành viên có sinh nhật trong tháng'),
-('KM003', 'Combo cuối tuần', '2026-06-01', '2026-12-31', 'Giảm giá combo', 'Mua combo vào thứ Bảy hoặc Chủ Nhật'),
-('KM004', 'Ưu đãi HSSV', '2026-08-01', '2027-05-31', 'Giảm giá vé', 'Xuất trình thẻ học sinh còn hiệu lực'),
-('KM005', 'Khách hàng mới', '2026-01-01', '2026-12-31', 'Mã giảm giá', 'Áp dụng cho hóa đơn đầu tiên');
+('KM001', 'Thứ Hai vui vẻ', '2026-01-01', '2026-12-31', 'Giảm giá vé',
+ 'Giảm 10% tiền vé có ngày chiếu thứ Hai', 10, 'VE'),
+('KM002', 'Sinh nhật thành viên', '2026-01-01', '2026-12-31', 'Quà tặng',
+ 'Thành viên có sinh nhật trong tháng', NULL, NULL),
+('KM003', 'Combo thanh toán thẻ hoặc ví', '2026-06-01', '2026-12-31', 'Giảm giá combo',
+ 'Giảm 5% combo bắp nước khi thanh toán bằng thẻ ngân hàng hoặc ví điện tử', 5, 'COMBO'),
+('KM004', 'Ưu đãi HSSV', '2026-08-01', '2027-05-31', 'Giảm giá vé',
+ 'Giảm 15% tiền vé với khách hàng là HSSV', 15, 'VE'),
+('KM005', 'Khách hàng mới', '2026-01-01', '2026-12-31', 'Quà tặng',
+ 'Hóa đơn đầu tiên được kèm quà tặng', NULL, NULL);
 
 -- 5. KHACH_HANG
+-- KH003 đã được xác minh HSSV; xét người đứng tên hóa đơn.
 INSERT INTO KHACH_HANG
-    (MaKhachHang, Ten, GioiTinh, NgaySinh, SoDienThoai, Email)
+    (MaKhachHang, Ten, GioiTinh, NgaySinh, SoDienThoai, Email, LaHSSV)
 VALUES
-('KH001', 'Nguyễn Minh Anh', 'Nữ', '2001-03-15', '0901000001', 'minhanh01@gmail.com'),
-('KH002', 'Trần Quốc Bảo', 'Nam', '1998-07-22', '0901000002', 'quocbao02@gmail.com'),
-('KH003', 'Lê Hoàng Gia Hân', 'Nữ', '2003-11-09', '0901000003', 'giahan03@gmail.com'),
-('KH004', 'Phạm Đức Long', 'Nam', '1995-05-30', '0901000004', 'duclong04@gmail.com'),
-('KH005', 'Võ Khánh Linh', 'Khác', '2000-12-12', '0901000005', 'khanhlinh05@gmail.com');
+('KH001', 'Nguyễn Minh Anh', 'Nữ', '2001-03-15', '0901000001', 'minhanh01@gmail.com', 0),
+('KH002', 'Trần Quốc Bảo', 'Nam', '1998-07-22', '0901000002', 'quocbao02@gmail.com', 0),
+('KH003', 'Lê Hoàng Gia Hân', 'Nữ', '2003-11-09', '0901000003', 'giahan03@gmail.com', 1),
+('KH004', 'Phạm Đức Long', 'Nam', '1995-05-30', '0901000004', 'duclong04@gmail.com', 0),
+('KH005', 'Võ Khánh Linh', 'Khác', '2000-12-12', '0901000005', 'khanhlinh05@gmail.com', 0);
 
 -- 6. CA_LAM_VIEC
 INSERT INTO CA_LAM_VIEC (MaCa, TenCa, GioBatDau, GioKetThuc) VALUES
@@ -211,7 +218,10 @@ VALUES
 ('SC002', '2026-12-01', '11:30:00', '13:15:00', '2D', 'Lồng tiếng', 'PH002', 'R02', 'P02', 'NV002'),
 ('SC003', '2026-12-01', '14:00:00', '15:35:00', '3D', 'Lồng tiếng', 'PH003', 'R03', 'P03', 'NV003'),
 ('SC004', '2026-12-01', '18:00:00', '19:50:00', '2D', 'Phụ đề', 'PH004', 'R04', 'P04', 'NV004'),
-('SC005', '2026-12-01', '20:15:00', '22:10:00', '2D', 'Phụ đề', 'PH005', 'R05', 'P05', 'NV005');
+('SC005', '2026-12-01', '20:15:00', '22:10:00', '2D', 'Phụ đề', 'PH005', 'R05', 'P05', 'NV005'),
+-- Suất chiếu áp dụng KM 
+('SC006', '2026-12-07', '09:00:00', '11:00:00', '2D', 'Phụ đề', 'PH001', 'R01', 'P01', 'NV001'),
+('SC007', '2026-12-07', '13:00:00', '15:00:00', 'IMAX', 'Phụ đề', 'PH001', 'R01', 'P01', 'NV001');
 
 -- 21. THE_THANH_VIEN
 INSERT INTO THE_THANH_VIEN
@@ -232,31 +242,69 @@ INSERT INTO KHACH_HANG_TAI_KHOAN (MaKhachHang, MaTaiKhoan) VALUES
 ('KH005', 'TK015');
 
 -- 23. HOA_DON
--- TongTien du kien theo chi tiet VE + BAO_GOM, chua tru khuyen mai:
--- HD001 = 90.000 (chi ve)
--- HD002 = 78.000 (chi combo)
--- HD003 = 120.000 + 98.000 = 218.000 (ve + combo)
--- HD004 = 90.000 + 120.000 = 210.000 (nhieu ve)
--- HD005 = 150.000 + 2 × 58.000 + 25.000 + 38.000 = 329.000 (ve + nhieu combo)
+-- Giá trên VE và BAO_GOM là giá trước khuyến mãi.
+-- TongTien = tổng vé + tổng sản phẩm - TienGiam.
+-- HD001: 65.000
+-- HD002: 78.000 - 3.900 = 74.100.
+-- HD003: 100.000 + 98.000 - 15.000 = 183.000 (HSSV tốt hơn giảm combo).
+-- HD004: 65.000 + 85.000 = 150.000.
+-- HD005: 70.000 + 2*58.000 + 25.000 + 38.000 = 249.000 (không có combo).
+-- HD006: 65.000 - 6.500 = 58.500 (thứ Hai).
+-- HD007: 150.000 - 22.500 = 127.500 (HSSV tốt hơn thứ Hai).
 INSERT INTO HOA_DON
-    (MaHoaDon, TongTien, ThoiGian, PhuongThucThanhToan,
+    (MaHoaDon, TongTien, TienGiam, ThoiGian, PhuongThucThanhToan,
      MaNhanVien, MaKhachHang, MaKhuyenMai)
 VALUES
-('HD001', 90000, '2026-11-28 09:15:00', 'Tiền mặt', 'NV006', 'KH001', NULL),
-('HD002', 78000, '2026-11-28 10:20:00', 'Thẻ ngân hàng', 'NV007', 'KH002', 'KM003'),
-('HD003', 218000, '2026-11-28 14:05:00', 'Ví điện tử', 'NV008', 'KH003', 'KM005'),
-('HD004', 210000, '2026-11-29 18:10:00', 'Thẻ ngân hàng', 'NV009', 'KH004', NULL),
-('HD005', 329000, '2026-11-29 20:00:00', 'Ví điện tử', 'NV010', 'KH005', NULL);
+('HD001', 65000, 0, '2026-11-28 09:15:00', 'Tiền mặt', 'NV006', 'KH001', NULL),
+('HD002', 74100, 3900, '2026-11-28 10:20:00', 'Thẻ ngân hàng', 'NV007', 'KH002', 'KM003'),
+('HD003', 183000, 15000, '2026-11-28 14:05:00', 'Ví điện tử', 'NV008', 'KH003', 'KM004'),
+('HD004', 150000, 0, '2026-11-29 18:10:00', 'Thẻ ngân hàng', 'NV009', 'KH004', NULL),
+('HD005', 249000, 0, '2026-11-29 20:00:00', 'Ví điện tử', 'NV010', 'KH005', NULL),
+('HD006', 58500, 6500, '2026-12-05 10:00:00', 'Ví điện tử', 'NV006', 'KH001', 'KM001'),
+('HD007', 127500, 22500, '2026-12-05 11:00:00', 'Ví điện tử', 'NV006', 'KH003', 'KM004');
 
 -- 24. VE
+INSERT INTO BANG_GIA_VE (DinhDang, LoaiGhe, DonGia) VALUES
+('2D',   'Thường',  65000),
+('2D',   'VIP',     85000),
+('2D',   'Đôi',     70000),
+
+('3D',   'Thường',  80000),
+('3D',   'VIP',    100000),
+('3D',   'Đôi',     85000),
+
+('IMAX', 'Thường', 150000),
+('IMAX', 'VIP',    180000),
+('IMAX', 'Đôi',    155000);
+
+
 INSERT INTO VE
-    (MaVe, GiaVe, HinhThucMua, MaSuatChieu, MaRap, MaPhong, MaGhe, MaHoaDon)
+    (MaVe, GiaVe, HinhThucMua, ThoiGianDat,
+     DinhDang, LoaiGhe, MaSuatChieu,
+     MaRap, MaPhong, MaGhe, MaHoaDon)
 VALUES
-('VE001', 90000, 'Trực tiếp', 'SC001', 'R01', 'P01', 'A01', 'HD001'),
-('VE002', 120000, 'Trực tuyến', 'SC003', 'R03', 'P03', 'C02', 'HD003'),
-('VE003', 90000, 'Trực tiếp', 'SC004', 'R04', 'P04', 'D01', 'HD004'),
-('VE004', 120000, 'Trực tiếp', 'SC004', 'R04', 'P04', 'D02', 'HD004'),
-('VE005', 150000, 'Trực tuyến', 'SC005', 'R05', 'P05', 'E03', 'HD005');
+('VE001',  65000, 'Trực tiếp',  '2026-11-28 09:15:00',
+ '2D', 'Thường', 'SC001', 'R01', 'P01', 'A01', 'HD001'),
+
+('VE002', 100000, 'Trực tuyến', '2026-11-28 14:05:00',
+ '3D', 'VIP', 'SC003', 'R03', 'P03', 'C02', 'HD003'),
+
+('VE003',  65000, 'Trực tiếp',  '2026-11-29 18:10:00',
+ '2D', 'Thường', 'SC004', 'R04', 'P04', 'D01', 'HD004'),
+
+('VE004',  85000, 'Trực tiếp',  '2026-11-29 18:10:00',
+ '2D', 'VIP', 'SC004', 'R04', 'P04', 'D02', 'HD004'),
+
+('VE005',  70000, 'Trực tuyến', '2026-11-29 20:00:00',
+ '2D', 'Đôi', 'SC005', 'R05', 'P05', 'E03', 'HD005'),
+
+ -- Vé áp dụng T2 Vui vẻ
+('VE006', 65000, 'Trực tuyến', '2026-12-05 10:00:00',
+ '2D', 'Thường', 'SC006', 'R01', 'P01', 'A01', 'HD006'),
+
+-- Vé có cả ưu đãi thứ Hai và HSSV: procedure chọn HSSV
+('VE007', 150000, 'Trực tuyến', '2026-12-05 11:00:00',
+ 'IMAX', 'Thường', 'SC007', 'R01', 'P01', 'A01', 'HD007');
 
 -- 25. BAO_GOM
 INSERT INTO BAO_GOM (MaHoaDon, MaSanPham, SoLuong, DonGia) VALUES
@@ -270,6 +318,7 @@ INSERT INTO SO_HUU (MaKhachHang, MaKhuyenMai) VALUES
 ('KH001', 'KM001'),
 ('KH002', 'KM003'),
 ('KH003', 'KM005'),
+('KH003', 'KM004'),
 ('KH004', 'KM001'),
 ('KH005', 'KM002');
 
@@ -279,6 +328,6 @@ INSERT INTO TRUC (MaCa, MaNhanVien, NgayLamViec) VALUES
 ('CA01', 'NV007', '2026-11-28'),
 ('CA02', 'NV008', '2026-11-28'),
 ('CA03', 'NV009', '2026-11-29'),
-('CA04', 'NV010', '2026-11-29'); 
-
+('CA04', 'NV010', '2026-11-29'),
+('CA05', 'NV006', '2026-11-30');
 COMMIT;

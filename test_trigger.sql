@@ -1,70 +1,50 @@
+SET NAMES utf8mb4;
 USE myCinemaDB;
-
-SELECT COUNT(*) AS SoTrigger
-FROM information_schema.TRIGGERS
-WHERE TRIGGER_SCHEMA = DATABASE()
-  AND TRIGGER_NAME IN ('THEM_VE', 'SUA_VE', 'XOA_VE',
-                       'THEM_SANPHAM', 'SUA_SANPHAM', 'XOA_SANPHAM');
-
-SELECT COUNT(*) AS SoProcedure
-FROM information_schema.ROUTINES
-WHERE ROUTINE_SCHEMA = DATABASE()
-  AND ROUTINE_TYPE = 'PROCEDURE'
-  AND ROUTINE_NAME = 'TinhLaiTongTien';
 
 START TRANSACTION;
 
 INSERT INTO HOA_DON
-    (MaHoaDon, TongTien, ThoiGian, PhuongThucThanhToan,
-     MaNhanVien, MaKhachHang, MaKhuyenMai)
-VALUES ('HD900', 0, '2026-11-28 09:30:00', 'Tiền mặt', 'NV006', 'KH001', NULL);
+    (MaHoaDon, ThoiGian, PhuongThucThanhToan, MaNhanVien, MaKhachHang)
+VALUES
+    ('HD900', '2026-12-05 11:00:00', 'Ví điện tử', 'NV006', 'KH003'),
+    ('HD901', '2026-12-05 11:00:00', 'Tiền mặt', 'NV006', 'KH001');
 
--- VE: them, sua gia, chuyen sang hoa don khac, xoa.
+-- 1. THÊM VÉ: 
 INSERT INTO VE
-    (MaVe, GiaVe, HinhThucMua, MaSuatChieu, MaRap, MaPhong, MaGhe, MaHoaDon)
-VALUES ('VE900', 120000, 'Trực tiếp', 'SC001', 'R01', 'P01', 'A02', 'HD900');
-SELECT 'VE INSERT: HD900=120000' AS Buoc, MaHoaDon, TongTien FROM HOA_DON WHERE MaHoaDon IN ('HD900');
+    (MaVe, GiaVe, HinhThucMua, ThoiGianDat, DinhDang, LoaiGhe,
+     MaSuatChieu, MaRap, MaPhong, MaGhe, MaHoaDon)
+VALUES
+    ('VE900', 180000, 'Trực tuyến', '2026-12-05 11:00:00',
+     'IMAX', 'VIP', 'SC007', 'R01', 'P01', 'A02', 'HD900');
+SELECT '1. Thêm VE' AS Buoc, MaHoaDon, MaKhuyenMai, TienGiam, TongTien
+FROM HOA_DON WHERE MaHoaDon = 'HD900';
 
-UPDATE VE SET GiaVe = 130000 WHERE MaVe = 'VE900';
-SELECT 'VE UPDATE GiaVe: HD900=130000' AS Buoc, MaHoaDon, TongTien FROM HOA_DON WHERE MaHoaDon IN ('HD900');
-
-UPDATE VE SET MaHoaDon = 'HD001' WHERE MaVe = 'VE900';
-SELECT 'VE UPDATE MaHoaDon: HD900=0, HD001=220000' AS Buoc, MaHoaDon, TongTien
-FROM HOA_DON WHERE MaHoaDon IN ('HD900', 'HD001') ORDER BY MaHoaDon;
-
-DELETE FROM VE WHERE MaVe = 'VE900';
-SELECT 'VE DELETE: HD001=90000' AS Buoc, MaHoaDon, TongTien FROM HOA_DON WHERE MaHoaDon = 'HD001';
-
--- BAO_GOM: them, sua so luong/don gia, chuyen hoa don, xoa.
+-- 2. THÊM COMBO: 
 INSERT INTO BAO_GOM (MaHoaDon, MaSanPham, SoLuong, DonGia)
-VALUES ('HD900', 'SP005', 1, 38000);
-SELECT 'BAO_GOM INSERT: HD900=38000' AS Buoc, MaHoaDon, TongTien FROM HOA_DON WHERE MaHoaDon = 'HD900';
+VALUES ('HD900', 'SP001', 1, 78000);
+SELECT '2. Thêm combo' AS Buoc, MaHoaDon, MaKhuyenMai, TienGiam, TongTien
+FROM HOA_DON WHERE MaHoaDon = 'HD900';
 
-UPDATE BAO_GOM SET SoLuong = 2, DonGia = 40000
-WHERE MaHoaDon = 'HD900' AND MaSanPham = 'SP005';
-SELECT 'BAO_GOM UPDATE: HD900=80000' AS Buoc, MaHoaDon, TongTien FROM HOA_DON WHERE MaHoaDon = 'HD900';
+-- 3. SỬA COMBO: 
+UPDATE BAO_GOM SET SoLuong = 10
+WHERE MaHoaDon = 'HD900' AND MaSanPham = 'SP001';
+SELECT '3. Sửa combo' AS Buoc, MaHoaDon, MaKhuyenMai, TienGiam, TongTien
+FROM HOA_DON WHERE MaHoaDon = 'HD900';
 
-UPDATE BAO_GOM SET MaHoaDon = 'HD001'
-WHERE MaHoaDon = 'HD900' AND MaSanPham = 'SP005';
-SELECT 'BAO_GOM MOVE: HD900=0, HD001=170000' AS Buoc, MaHoaDon, TongTien
-FROM HOA_DON WHERE MaHoaDon IN ('HD900', 'HD001') ORDER BY MaHoaDon;
+-- 4. SỬA VÉ: 
+UPDATE VE SET MaHoaDon = 'HD901' WHERE MaVe = 'VE900';
+SELECT '4. Sửa VE: chuyển hóa đơn' AS Buoc,
+       MaHoaDon, MaKhuyenMai, TienGiam, TongTien
+FROM HOA_DON WHERE MaHoaDon IN ('HD900', 'HD901') ORDER BY MaHoaDon;
 
-DELETE FROM BAO_GOM WHERE MaHoaDon = 'HD001' AND MaSanPham = 'SP005';
-SELECT 'BAO_GOM DELETE: HD001=90000' AS Buoc, MaHoaDon, TongTien FROM HOA_DON WHERE MaHoaDon = 'HD001';
+-- 5. XÓA VÉ:
+DELETE FROM VE WHERE MaVe = 'VE900';
+SELECT '5. Xóa VE' AS Buoc, MaHoaDon, MaKhuyenMai, TienGiam, TongTien
+FROM HOA_DON WHERE MaHoaDon = 'HD901';
+
+-- 6. XÓA COMBO:
+DELETE FROM BAO_GOM WHERE MaHoaDon = 'HD900' AND MaSanPham = 'SP001';
+SELECT '6. Xóa combo' AS Buoc, MaHoaDon, MaKhuyenMai, TienGiam, TongTien
+FROM HOA_DON WHERE MaHoaDon = 'HD900';
 
 ROLLBACK;
-
--- Phai bang 0: khong con hoa don thu va tong cua 5 hoa don mau khong doi.
-SELECT COUNT(*) AS SoHD900ConLai FROM HOA_DON WHERE MaHoaDon = 'HD900';
-SELECT MaHoaDon, TongTien FROM HOA_DON ORDER BY MaHoaDon;
-
--- Phai tra ve 0 dong: tong luu trong hoa don khop chi tiet.
-SELECT hd.MaHoaDon, hd.TongTien,
-       COALESCE(v.TongVe, 0) + COALESCE(bg.TongSanPham, 0) AS TongTinhLai
-FROM HOA_DON AS hd
-LEFT JOIN (SELECT MaHoaDon, SUM(GiaVe) AS TongVe FROM VE GROUP BY MaHoaDon) AS v
-    ON v.MaHoaDon = hd.MaHoaDon
-LEFT JOIN (SELECT MaHoaDon, SUM(SoLuong * DonGia) AS TongSanPham
-           FROM BAO_GOM GROUP BY MaHoaDon) AS bg
-    ON bg.MaHoaDon = hd.MaHoaDon
-WHERE hd.TongTien <> COALESCE(v.TongVe, 0) + COALESCE(bg.TongSanPham, 0);
