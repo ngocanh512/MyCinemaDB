@@ -54,6 +54,8 @@ CREATE TABLE KHUYEN_MAI(
     NgayBatDau DATE,
     NgayKetThuc DATE,
     LoaiKhuyenMai VARCHAR(50), 
+    TyLeGiam DECIMAL(5, 2) NULL,
+    CONSTRAINT chk_tylegiam CHECK (TyLeGiam BETWEEN 0 AND 100),
     DieuKien TEXT,
     CONSTRAINT cnm_ngay
 		CHECK(NgayKetThuc >= NgayBatDau)
@@ -70,6 +72,8 @@ CREATE TABLE KHACH_HANG(
     SoDienThoai VARCHAR(10) UNIQUE,
 		CONSTRAINT cnm_sdt
         CHECK(SoDienThoai REGEXP '^0[0-9]{9}$'),
+	LaHSSV BOOLEAN NOT NULL DEFAULT FALSE,
+        CONSTRAINT chk_lahssv CHECK (LaHSSV IN (0, 1)),
     Email VARCHAR(100) UNIQUE,
 		CONSTRAINT cnm_email
         CHECK (Email LIKE '_%@gmail.com')
@@ -300,6 +304,8 @@ CREATE TABLE KHACH_HANG_TAI_KHOAN (
 -- 23. Bảng HOA_DON
 CREATE TABLE HOA_DON (
     MaHoaDon VARCHAR(10) PRIMARY KEY,
+    TienGiam INT NOT NULL DEFAULT 0,
+        CONSTRAINT chk_tiengiam CHECK (TienGiam >= 0),
     TongTien INT NOT NULL DEFAULT 0,
 		CONSTRAINT cnm_tongtien
         CHECK(TongTien >= 0),
