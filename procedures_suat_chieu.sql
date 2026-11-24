@@ -42,8 +42,8 @@ BEGIN
        OR p_GioBatDau = p_GioKetThuc THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Giờ bắt đầu và giờ kết thúc phải là hai giờ hợp lệ khác nhau.';
     END IF;
-    IF p_DinhDang IS NULL OR p_DinhDang NOT IN ('2D', '3D') OR CHAR_LENGTH(p_DinhDang) > 20 THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Định dạng chiếu phải là 2D hoặc 3D.';
+    IF p_DinhDang IS NULL OR p_DinhDang NOT IN ('2D', '3D', 'IMAX') OR CHAR_LENGTH(p_DinhDang) > 20 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Định dạng chiếu phải là 2D, 3D hoặc IMAX.';
     END IF;
     IF p_HinhThucNgonNgu IS NULL OR p_HinhThucNgonNgu NOT IN ('Lồng tiếng', 'Phụ đề')
        OR CHAR_LENGTH(p_HinhThucNgonNgu) > 50 THEN
@@ -225,9 +225,18 @@ END$$
 
 DELIMITER ;
 
--- Chạy từng CALL sau khi nạp insert_data.sql. DEMO21 là suất chưa có vé.
--- CALL sp_ThemSuatChieu('DEMO21', '2026-12-01', '11:15:00', '13:15:00', '2D', 'Phụ đề', 'PH001', 'R01', 'P01', NULL);
--- CALL sp_SuaSuatChieu('DEMO21', '2026-12-01', '11:14:00', '13:14:00', '2D', 'Phụ đề', 'PH001', 'R01', 'P01', NULL);
--- CALL sp_SuaSuatChieu('DEMO21', '2026-12-01', '11:30:00', '13:30:00', '2D', 'Phụ đề', 'PH001', 'R01', 'P01', NULL);
+-- Chạy từng lệnh demo theo thứ tự trong cùng phiên SQL sau khi nạp insert_data.sql.
+-- Chọn ngày sau lịch hiện có của phòng R01/P01, kể cả suất qua đêm.
+-- SET @NgayDemo21 = (SELECT DATE_ADD(GREATEST(CURRENT_DATE(),
+--     COALESCE(MAX(NgayChieu), CURRENT_DATE())), INTERVAL 2 DAY)
+--     FROM SUAT_CHIEU WHERE MaRap = 'R01' AND MaPhong = 'P01');
+-- CALL sp_ThemSuatChieu('DEMO21MOC', @NgayDemo21, '09:00:00', '11:00:00', '2D', 'Phụ đề', 'PH001', 'R01', 'P01', NULL);
+-- CALL sp_ThemSuatChieu('DEMO21', @NgayDemo21, '11:15:00', '13:15:00', 'IMAX', 'Phụ đề', 'PH001', 'R01', 'P01', NULL);
+-- Ca dự kiến báo lỗi vì chỉ cách suất mốc 14 phút.
+-- CALL sp_SuaSuatChieu('DEMO21', @NgayDemo21, '11:14:00', '13:14:00', 'IMAX', 'Phụ đề', 'PH001', 'R01', 'P01', NULL);
+-- CALL sp_SuaSuatChieu('DEMO21', @NgayDemo21, '11:30:00', '13:30:00', 'IMAX', 'Phụ đề', 'PH001', 'R01', 'P01', NULL);
+-- Ca dự kiến báo lỗi vì SC001 đã có vé.
 -- CALL sp_XoaSuatChieu('SC001');
+-- Xóa cả hai suất demo trước khi minh họa mục 2.3.
 -- CALL sp_XoaSuatChieu('DEMO21');
+-- CALL sp_XoaSuatChieu('DEMO21MOC');
