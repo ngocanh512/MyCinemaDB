@@ -55,7 +55,7 @@ CREATE TABLE KHUYEN_MAI(
     NgayKetThuc DATE,
     LoaiKhuyenMai VARCHAR(50), 
     TyLeGiam DECIMAL(5, 2) NULL,
-    CONSTRAINT chk_tylegiam CHECK (TyLeGiam BETWEEN 0 AND 100),
+    CONSTRAINT chk_tylegiam CHECK (TyLeGiam > 0 AND TyLeGiam <= 100),
     DieuKien TEXT,
     CONSTRAINT cnm_ngay
 		CHECK(NgayKetThuc >= NgayBatDau)
