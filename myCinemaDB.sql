@@ -53,10 +53,20 @@ CREATE TABLE KHUYEN_MAI(
     TenChuongTrinh VARCHAR(100) NOT NULL,
     NgayBatDau DATE,
     NgayKetThuc DATE,
-    LoaiKhuyenMai VARCHAR(50), 
-    TyLeGiam DECIMAL(5, 2) NULL,
-    CONSTRAINT chk_tylegiam CHECK (TyLeGiam > 0 AND TyLeGiam <= 100),
+    LoaiKhuyenMai VARCHAR(50) NOT NULL, 
     DieuKien TEXT,
+    TyLeGiam DECIMAL(5, 2) NULL,
+    CONSTRAINT chk_loai_km CHECK (LoaiKhuyenMai IN ('Giảm giá', 'Tặng quà')),
+    -- RB28: giảm giá phải có tỷ lệ (0,100]; tặng quà phải để NULL.
+    CONSTRAINT chk_tylegiam CHECK (
+        (LoaiKhuyenMai = 'Giảm giá' AND TyLeGiam IS NOT NULL
+         AND TyLeGiam > 0 AND TyLeGiam <= 100)
+        OR (LoaiKhuyenMai = 'Tặng quà' AND TyLeGiam IS NULL)
+    ),
+    CONSTRAINT chk_dieukien_giam CHECK (
+        LoaiKhuyenMai <> 'Giảm giá'
+        OR (DieuKien IS NOT NULL AND DieuKien IN ('Thứ Hai', 'HSSV', 'Thẻ/Ví'))
+    ),
     CONSTRAINT cnm_ngay
 		CHECK(NgayKetThuc >= NgayBatDau)
 );
@@ -72,7 +82,7 @@ CREATE TABLE KHACH_HANG(
     SoDienThoai VARCHAR(10) UNIQUE,
 		CONSTRAINT cnm_sdt
         CHECK(SoDienThoai REGEXP '^0[0-9]{9}$'),
-	LaHSSV BOOLEAN NOT NULL DEFAULT FALSE,
+    LaHSSV BOOLEAN NOT NULL DEFAULT FALSE,
         CONSTRAINT chk_lahssv CHECK (LaHSSV IN (0, 1)),
     Email VARCHAR(100) UNIQUE,
 		CONSTRAINT cnm_email
@@ -304,6 +314,7 @@ CREATE TABLE KHACH_HANG_TAI_KHOAN (
 -- 23. Bảng HOA_DON
 CREATE TABLE HOA_DON (
     MaHoaDon VARCHAR(10) PRIMARY KEY,
+    -- TongTien là số tiền sau giảm; giá trên VE/BAO_GOM là giá trước giảm.
     TienGiam INT NOT NULL DEFAULT 0,
         CONSTRAINT chk_tiengiam CHECK (TienGiam >= 0),
     TongTien INT NOT NULL DEFAULT 0,
@@ -429,6 +440,7 @@ CREATE TABLE TRUC (
         REFERENCES NHAN_VIEN_VAN_HANH(MaNhanVien)
 );
 
+
 ALTER TABLE RAP_PHIM
 ADD CONSTRAINT FK_RAP_PHIM_QUAN_TRI_VIEN
 FOREIGN KEY (MaQuanLy)
@@ -443,3 +455,5 @@ ALTER TABLE SUAT_CHIEU
 ADD CONSTRAINT FK_SUAT_CHIEU_QUAN_TRI_VIEN
 FOREIGN KEY (MaQuanLy)
 REFERENCES QUAN_TRI_VIEN(MaNhanVien);
+
+
