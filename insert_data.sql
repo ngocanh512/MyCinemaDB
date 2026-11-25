@@ -31,18 +31,18 @@ INSERT INTO SAN_PHAM (MaSanPham, TenSanPham, GiaBan, SoLuongTon) VALUES
 -- 4. KHUYEN_MAI
 INSERT INTO KHUYEN_MAI
     (MaKhuyenMai, TenChuongTrinh, NgayBatDau, NgayKetThuc,
-     LoaiKhuyenMai, DieuKien, TyLeGiam, PhamViApDung)
+     LoaiKhuyenMai, DieuKien, TyLeGiam)
 VALUES
-('KM001', 'Thứ Hai vui vẻ', '2026-01-01', '2026-12-31', 'Giảm giá vé',
- 'Giảm 10% tiền vé có ngày chiếu thứ Hai', 10, 'VE'),
-('KM002', 'Sinh nhật thành viên', '2026-01-01', '2026-12-31', 'Quà tặng',
- 'Thành viên có sinh nhật trong tháng', NULL, NULL),
-('KM003', 'Combo thanh toán thẻ hoặc ví', '2026-06-01', '2026-12-31', 'Giảm giá combo',
- 'Giảm 5% combo bắp nước khi thanh toán bằng thẻ ngân hàng hoặc ví điện tử', 5, 'COMBO'),
-('KM004', 'Ưu đãi HSSV', '2026-08-01', '2027-05-31', 'Giảm giá vé',
- 'Giảm 15% tiền vé với khách hàng là HSSV', 15, 'VE'),
-('KM005', 'Khách hàng mới', '2026-01-01', '2026-12-31', 'Quà tặng',
- 'Hóa đơn đầu tiên được kèm quà tặng', NULL, NULL);
+('KM001', 'Thứ Hai vui vẻ', '2026-01-01', '2026-12-31', 'Giảm giá',
+ 'Thứ Hai', 10),
+('KM002', 'Sinh nhật thành viên', '2026-01-01', '2026-12-31', 'Tặng quà',
+ 'Thành viên có sinh nhật trong tháng', NULL),
+('KM003', 'Ưu đãi thanh toán thẻ hoặc ví', '2026-06-01', '2026-12-31', 'Giảm giá',
+ 'Thẻ/Ví', 5),
+('KM004', 'Ưu đãi HSSV', '2026-08-01', '2027-05-31', 'Giảm giá',
+ 'HSSV', 15),
+('KM005', 'Khách hàng mới', '2026-01-01', '2026-12-31', 'Tặng quà',
+ 'Hóa đơn đầu tiên được kèm quà tặng', NULL);
 
 -- 5. KHACH_HANG
 -- KH003 đã được xác minh HSSV; xét người đứng tên hóa đơn.
@@ -137,7 +137,7 @@ INSERT INTO GHE_VIP (MaRap, MaPhong, MaGhe, NgaLung) VALUES
 INSERT INTO NHAN_VIEN
     (MaNhanVien, Ho, Ten, GioiTinh, NgaySinh, SoDienThoai, CCCD, MucLuong, MaTaiKhoan, MaRap)
 VALUES
-('NV001', 'Nguyễn Văn', 'An', 'Nam', '1988-01-10', '0912000001', '079088000001', 22000000, 'TK001', 'R01'),
+('NV001', 'Nguyễn Ngọc', 'Ánh', 'Nữ', '1988-01-10', '0912000001', '079088000001', 22000000, 'TK001', 'R01'),
 ('NV002', 'Trần Thị', 'Bích', 'Nữ', '1990-02-20', '0912000002', '079090000002', 21000000, 'TK002', 'R02'),
 ('NV003', 'Lê Minh', 'Cường', 'Nam', '1987-03-12', '0912000003', '079087000003', 23000000, 'TK003', 'R03'),
 ('NV004', 'Phạm Ngọc', 'Dung', 'Nữ', '1992-04-08', '0912000004', '079092000004', 20500000, 'TK004', 'R04'),
@@ -242,26 +242,17 @@ INSERT INTO KHACH_HANG_TAI_KHOAN (MaKhachHang, MaTaiKhoan) VALUES
 ('KH005', 'TK015');
 
 -- 23. HOA_DON
--- Giá trên VE và BAO_GOM là giá trước khuyến mãi.
--- TongTien = tổng vé + tổng sản phẩm - TienGiam.
--- HD001: 65.000
--- HD002: 78.000 - 3.900 = 74.100.
--- HD003: 100.000 + 98.000 - 15.000 = 183.000 (HSSV tốt hơn giảm combo).
--- HD004: 65.000 + 85.000 = 150.000.
--- HD005: 70.000 + 2*58.000 + 25.000 + 38.000 = 249.000 (không có combo).
--- HD006: 65.000 - 6.500 = 58.500 (thứ Hai).
--- HD007: 150.000 - 22.500 = 127.500 (HSSV tốt hơn thứ Hai).
 INSERT INTO HOA_DON
     (MaHoaDon, TongTien, TienGiam, ThoiGian, PhuongThucThanhToan,
      MaNhanVien, MaKhachHang, MaKhuyenMai)
 VALUES
 ('HD001', 65000, 0, '2026-11-28 09:15:00', 'Tiền mặt', 'NV006', 'KH001', NULL),
 ('HD002', 74100, 3900, '2026-11-28 10:20:00', 'Thẻ ngân hàng', 'NV007', 'KH002', 'KM003'),
-('HD003', 183000, 15000, '2026-11-28 14:05:00', 'Ví điện tử', 'NV008', 'KH003', 'KM004'),
-('HD004', 150000, 0, '2026-11-29 18:10:00', 'Thẻ ngân hàng', 'NV009', 'KH004', NULL),
-('HD005', 249000, 0, '2026-11-29 20:00:00', 'Ví điện tử', 'NV010', 'KH005', NULL),
-('HD006', 58500, 6500, '2026-12-05 10:00:00', 'Ví điện tử', 'NV006', 'KH001', 'KM001'),
-('HD007', 127500, 22500, '2026-12-05 11:00:00', 'Ví điện tử', 'NV006', 'KH003', 'KM004');
+('HD003', 168300, 29700, '2026-11-28 14:05:00', 'Ví điện tử', NULL, 'KH003', 'KM004'),
+('HD004', 142500, 7500, '2026-11-29 18:10:00', 'Thẻ ngân hàng', 'NV009', 'KH004', 'KM003'),
+('HD005', 236550, 12450, '2026-11-29 20:00:00', 'Ví điện tử', NULL, 'KH005', 'KM003'),
+('HD006', 58500, 6500, '2026-12-05 10:00:00', 'Ví điện tử', NULL, 'KH001', 'KM001'),
+('HD007', 127500, 22500, '2026-12-05 11:00:00', 'Ví điện tử', NULL, 'KH003', 'KM004');
 
 -- 24. VE
 INSERT INTO BANG_GIA_VE (DinhDang, LoaiGhe, DonGia) VALUES
@@ -274,7 +265,7 @@ INSERT INTO BANG_GIA_VE (DinhDang, LoaiGhe, DonGia) VALUES
 ('3D',   'Đôi',     85000),
 
 ('IMAX', 'Thường', 150000),
-('IMAX', 'VIP',    180000),
+('IMAX', 'VIP',    170000),
 ('IMAX', 'Đôi',    155000);
 
 
@@ -314,13 +305,14 @@ INSERT INTO BAO_GOM (MaHoaDon, MaSanPham, SoLuong, DonGia) VALUES
 ('HD005', 'SP004', 1, 25000),
 ('HD005', 'SP005', 1, 38000);
 -- 26. SO_HUU
+-- Chỉ chương trình tặng quà được cấp riêng; giảm giá được xét tự động.
 INSERT INTO SO_HUU (MaKhachHang, MaKhuyenMai) VALUES
-('KH001', 'KM001'),
-('KH002', 'KM003'),
+('KH001', 'KM005'),
+('KH002', 'KM005'),
 ('KH003', 'KM005'),
-('KH003', 'KM004'),
-('KH004', 'KM001'),
-('KH005', 'KM002');
+('KH004', 'KM005'),
+('KH005', 'KM005'),
+('KH003', 'KM002');
 
 -- 27. TRUC
 INSERT INTO TRUC (MaCa, MaNhanVien, NgayLamViec) VALUES

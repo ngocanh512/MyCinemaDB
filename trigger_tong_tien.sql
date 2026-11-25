@@ -19,19 +19,23 @@ BEGIN
     -- 1. Biến chỉ dùng trong lần tính hóa đơn này; không thêm cột vào VE/BAO_GOM.
     DECLARE vTongVe DECIMAL(18, 0) DEFAULT 0;
     DECLARE vTongSanPham DECIMAL(18, 0) DEFAULT 0;
-    DECLARE vTongVeThuHai DECIMAL(18, 0) DEFAULT 0;
-    DECLARE vTongCombo DECIMAL(18, 0) DEFAULT 0;
+    DECLARE vCoVeThuHai BOOLEAN DEFAULT FALSE;
+    DECLARE vTongTruocGiam DECIMAL(18, 0) DEFAULT 0;
     DECLARE vNgayThanhToan DATE;
     DECLARE vPhuongThucThanhToan VARCHAR(50);
     DECLARE vLaHSSV BOOLEAN;
-    DECLARE vGiamThuHai DECIMAL(18, 0) DEFAULT 0;
-    DECLARE vGiamCombo DECIMAL(18, 0) DEFAULT 0;
-    DECLARE vGiamHSSV DECIMAL(18, 0) DEFAULT 0;
     DECLARE vTienGiam DECIMAL(18, 0) DEFAULT 0;
     DECLARE vMaKhuyenMai VARCHAR(10) DEFAULT NULL;
+    -- Không tìm được chương trình hợp lệ: giữ trạng thái không giảm.
+    DECLARE CONTINUE HANDLER FOR NOT FOUND
+        SET vMaKhuyenMai = NULL, vTienGiam = 0;
 
-    -- 2. Dùng ngày thanh toán của hóa đơn.
-    IF NOT EXISTS (SELECT 1 FROM HOA_DON WHERE MaHoaDon = p_MaHoaDon) THEN
+    -- 2. Xác định điều kiện HSSV
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM HOA_DON 
+        WHERE MaHoaDon = p_MaHoaDon
+        ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Không tìm thấy hóa đơn cần tính tiền.';
     END IF;
@@ -42,71 +46,52 @@ BEGIN
     JOIN KHACH_HANG AS kh ON kh.MaKhachHang = hd.MaKhachHang
     WHERE hd.MaHoaDon = p_MaHoaDon;
 
-    -- 3. Tính tiền vé gốc và riêng tiền vé có NGÀY CHIẾU vào thứ Hai.
-    -- DAYOFWEEK: Chủ nhật = 1, thứ Hai = 2, ..., thứ Bảy = 7.
+    -- 3. Tính tổng tiền trước giảm
     SELECT COALESCE(SUM(v.GiaVe), 0),
-           COALESCE(SUM(CASE WHEN DAYOFWEEK(sc.NgayChieu) = 2
-                             THEN v.GiaVe ELSE 0 END), 0)
-    INTO vTongVe, vTongVeThuHai
+           COALESCE(MAX(DAYOFWEEK(sc.NgayChieu) = 2), FALSE)
+    INTO vTongVe, vCoVeThuHai
     FROM VE AS v
     JOIN SUAT_CHIEU AS sc
       ON sc.MaSuatChieu = v.MaSuatChieu
-     AND sc.MaRap = v.MaRap
-     AND sc.MaPhong = v.MaPhong
+     AND sc.MaRap = v.MaRap AND sc.MaPhong = v.MaPhong
     WHERE v.MaHoaDon = p_MaHoaDon;
 
-    -- 4. Tính tiền sản phẩm 
-    SELECT COALESCE(SUM(bg.SoLuong * bg.DonGia), 0),
-           COALESCE(SUM(CASE WHEN bg.MaSanPham IN ('SP001', 'SP002')
-                             THEN bg.SoLuong * bg.DonGia ELSE 0 END), 0)
-    INTO vTongSanPham, vTongCombo
+    SELECT COALESCE(SUM(bg.SoLuong * bg.DonGia), 0)
+    INTO vTongSanPham
     FROM BAO_GOM AS bg
     WHERE bg.MaHoaDon = p_MaHoaDon;
 
-    -- 5. Tính tiền giảm của 3 Khuyến mãi
-    SELECT
-        COALESCE(MAX(CASE
-            WHEN km.MaKhuyenMai = 'KM001' AND km.PhamViApDung = 'VE'
-            THEN ROUND(vTongVeThuHai * km.TyLeGiam / 100, 0)
-            ELSE 0 END), 0),
-        COALESCE(MAX(CASE
-            WHEN km.MaKhuyenMai = 'KM003' AND km.PhamViApDung = 'COMBO'
-             AND vPhuongThucThanhToan IN ('Thẻ ngân hàng', 'Ví điện tử')
-            THEN ROUND(vTongCombo * km.TyLeGiam / 100, 0)
-            ELSE 0 END), 0),
-        COALESCE(MAX(CASE
-            WHEN km.MaKhuyenMai = 'KM004' AND km.PhamViApDung = 'VE'
-             AND vLaHSSV = TRUE
-            THEN ROUND(vTongVe * km.TyLeGiam / 100, 0)
-            ELSE 0 END), 0)
-    INTO vGiamThuHai, vGiamCombo, vGiamHSSV
-    FROM KHUYEN_MAI AS km
-    WHERE vNgayThanhToan BETWEEN km.NgayBatDau AND km.NgayKetThuc
-      AND km.TyLeGiam BETWEEN 0 AND 100;
+    SET vTongTruocGiam = vTongVe + vTongSanPham;
 
-    -- 6. Chỉ chọn MỘT chương trình giảm nhiều tiền nhất.
-    -- Nếu bằng nhau: KM001 trước KM003 trước KM004.
-    IF vGiamThuHai > vTienGiam THEN
-        SET vTienGiam = vGiamThuHai;
-        SET vMaKhuyenMai = 'KM001';
+    -- 4. Đặt lại kết quả; hóa đơn rỗng/không được giảm có mã NULL, tiền giảm 0.
+    SET vMaKhuyenMai = NULL, vTienGiam = 0;
+
+    IF vTongTruocGiam > 0 THEN
+        -- Tính tiền giảm của khuyến mãi và chọn ra KM giảm nhiều tiền nhất
+        SELECT km.MaKhuyenMai,
+               ROUND(vTongTruocGiam * km.TyLeGiam / 100, 0)
+        INTO vMaKhuyenMai, vTienGiam
+        FROM KHUYEN_MAI AS km
+        WHERE km.LoaiKhuyenMai = 'Giảm giá'   
+          AND vNgayThanhToan BETWEEN km.NgayBatDau AND km.NgayKetThuc
+          AND km.TyLeGiam > 0 AND km.TyLeGiam <= 100
+          AND (
+              (km.DieuKien = 'Thứ Hai' AND vCoVeThuHai = TRUE)
+              OR (km.DieuKien = 'HSSV' AND vLaHSSV = TRUE)
+              OR (km.DieuKien = 'Thẻ/Ví'
+                  AND vPhuongThucThanhToan IN ('Thẻ ngân hàng', 'Ví điện tử'))
+          )
+          AND ROUND(vTongTruocGiam * km.TyLeGiam / 100, 0) > 0
+        ORDER BY ROUND(vTongTruocGiam * km.TyLeGiam / 100, 0) DESC,
+                 km.MaKhuyenMai ASC
+        LIMIT 1;
     END IF;
 
-    IF vGiamCombo > vTienGiam THEN
-        SET vTienGiam = vGiamCombo;
-        SET vMaKhuyenMai = 'KM003';
-    END IF;
-
-    IF vGiamHSSV > vTienGiam THEN
-        SET vTienGiam = vGiamHSSV;
-        SET vMaKhuyenMai = 'KM004';
-    END IF;
-
-    -- 7. Không sửa GIÁ BÁN; lưu mã, tiền giảm và số tiền thực trả trên HOA_DON.
-    -- Hóa đơn rỗng hoặc không được giảm: MaKhuyenMai = NULL, TienGiam = 0.
+    -- 5. Lưu tiền giảm và số tiền phải trả; không sửa giá bán.
     UPDATE HOA_DON
     SET MaKhuyenMai = vMaKhuyenMai,
         TienGiam = vTienGiam,
-        TongTien = vTongVe + vTongSanPham - vTienGiam
+        TongTien = vTongTruocGiam - vTienGiam
     WHERE MaHoaDon = p_MaHoaDon;
 END$$
 
