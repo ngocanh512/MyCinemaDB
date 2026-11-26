@@ -84,9 +84,9 @@ CREATE TABLE KHACH_HANG(
         CHECK(SoDienThoai REGEXP '^0[0-9]{9}$'),
     LaHSSV BOOLEAN NOT NULL DEFAULT FALSE,
         CONSTRAINT chk_lahssv CHECK (LaHSSV IN (0, 1)),
-    Email VARCHAR(100) UNIQUE,
+	Email VARCHAR(100) UNIQUE,
 		CONSTRAINT cnm_email
-        CHECK (Email LIKE '_%@gmail.com')
+        CHECK (Email LIKE '_%@_%._%')
 );
 
 -- 7. Bang CA_LAM_VIEC
