@@ -1,4 +1,4 @@
-﻿USE myCinemaDB;
+USE myCinemaDB;
 
 DROP PROCEDURE IF EXISTS sp_ThemSuatChieu;
 DROP PROCEDURE IF EXISTS sp_SuaSuatChieu;
@@ -13,7 +13,7 @@ CREATE PROCEDURE sp_KiemTraSuatChieu(
     IN p_GioBatDau TIME, IN p_GioKetThuc TIME,
     IN p_DinhDang TEXT, IN p_HinhThucNgonNgu TEXT,
     IN p_MaPhim TEXT, IN p_MaRap TEXT, IN p_MaPhong TEXT,
-    IN p_MaQuanLy TEXT, IN p_Sua BOOLEAN, IN p_KiemTraNgayQuaKhu BOOLEAN
+    IN p_MaQuanLy TEXT, IN p_Sua BOOLEAN, IN p_KiemTraQuaKhu BOOLEAN
 )
 BEGIN
     DECLARE v_Phong VARCHAR(10);
@@ -33,14 +33,15 @@ BEGIN
        OR MONTH(p_NgayChieu) = 0 OR DAY(p_NgayChieu) = 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ngày chiếu phải là ngày hợp lệ.';
     END IF;
-    IF p_KiemTraNgayQuaKhu AND p_NgayChieu < CURRENT_DATE() THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ngày chiếu không được ở trong quá khứ.';
-    END IF;
     IF p_GioBatDau IS NULL OR p_GioKetThuc IS NULL
        OR p_GioBatDau NOT BETWEEN '00:00:00' AND '23:59:59'
        OR p_GioKetThuc NOT BETWEEN '00:00:00' AND '23:59:59'
        OR p_GioBatDau = p_GioKetThuc THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Giờ bắt đầu và giờ kết thúc phải là hai giờ hợp lệ khác nhau.';
+    END IF;
+    SET v_BatDau = TIMESTAMP(p_NgayChieu, p_GioBatDau);
+    IF p_KiemTraQuaKhu AND v_BatDau < NOW() THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Thời điểm bắt đầu suất chiếu không được ở trong quá khứ.';
     END IF;
     IF p_DinhDang IS NULL OR p_DinhDang NOT IN ('2D', '3D', 'IMAX') OR CHAR_LENGTH(p_DinhDang) > 20 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Định dạng chiếu phải là 2D, 3D hoặc IMAX.';
@@ -91,7 +92,6 @@ BEGIN
     END IF;
 
     -- An end time earlier than the start time belongs to the following day.
-    SET v_BatDau = TIMESTAMP(p_NgayChieu, p_GioBatDau);
     SET v_KetThuc = TIMESTAMP(p_NgayChieu, p_GioKetThuc);
     IF p_GioKetThuc < p_GioBatDau THEN
         SET v_KetThuc = DATE_ADD(v_KetThuc, INTERVAL 1 DAY);
