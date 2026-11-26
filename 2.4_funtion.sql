@@ -285,7 +285,7 @@ BEGIN
     FROM SUAT_CHIEU
     WHERE MaSuatChieu = p_MaSuatChieu;
 
-    IF v_batDau <= NOW() THEN
+    IF v_batDau + INTERVAL 15 MINUTE < NOW() THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Suất chiếu đã bắt đầu hoặc đã chiếu xong';
     END IF;
