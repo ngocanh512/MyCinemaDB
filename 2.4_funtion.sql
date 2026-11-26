@@ -1,13 +1,12 @@
 
+
 USE myCinemaDB;
 
 DELIMITER $$
 
 -- =====================================================================
--- Hàm tỷ lệ sử dụng phòng
--- fn_TyLeSuDungPhong(p_MaRap, p_MaPhong, p_Ngay)
---
--- Trả về % thời gian phòng được dùng trong giờ hoạt động của ngày p_Ngay.
+-- Hàm Tỷ lệ sử dụng phòng
+-- =====================================================================
 
 DROP FUNCTION IF EXISTS fn_TyLeSuDungPhong$$
 
@@ -205,14 +204,15 @@ END$$
 
 
 -- =====================================================================
--- Hàm tìm dãy ghế trống (giữ nguyên)
+-- Hàm tìm dãy ghế trống
 -- =====================================================================
 
 DROP FUNCTION IF EXISTS fn_TimDayGheTrong$$
 
 CREATE FUNCTION fn_TimDayGheTrong(
     p_MaSuatChieu VARCHAR(10),
-    p_SoGhe       INT
+    p_SoGhe       INT,
+    p_LoaiGhe     VARCHAR(20)      -- 'Thường' | 'Đôi' | 'VIP'
 )
 RETURNS VARCHAR(10)
 READS SQL DATA
@@ -233,8 +233,10 @@ BEGIN
     DECLARE v_gheDauDay  VARCHAR(10) DEFAULT NULL;
     DECLARE v_ketQua     VARCHAR(10) DEFAULT NULL;
 
-    -- Con trỏ duyệt ghế của phòng theo hàng và số ghế,
-    -- đối chiếu (LEFT JOIN) với vé đã bán của suất chiếu
+    -- Con trỏ chỉ duyệt các ghế thuộc loại p_LoaiGhe của phòng,
+    -- theo hàng và số ghế, đối chiếu (LEFT JOIN) với vé đã bán của suất chiếu.
+    -- Ghế khác loại bị loại khỏi con trỏ nên số ghế bị nhảy cóc
+    -- và dãy tự động đứt tại đó.
     DECLARE cur_ghe CURSOR FOR
         SELECT g.MaGhe,
                LEFT(g.MaGhe, 1)                          AS Hang,
@@ -249,6 +251,7 @@ BEGIN
          AND v.MaPhong = g.MaPhong
          AND v.MaGhe = g.MaGhe
         WHERE sc.MaSuatChieu = p_MaSuatChieu
+          AND g.LoaiGhe = p_LoaiGhe
         ORDER BY Hang, So;
 
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_done = 1;
@@ -262,6 +265,11 @@ BEGIN
     IF p_SoGhe IS NULL OR p_SoGhe < 1 OR p_SoGhe > 10 THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Số ghế phải nằm trong khoảng từ 1 đến 10';
+    END IF;
+
+    IF p_LoaiGhe IS NULL OR p_LoaiGhe NOT IN ('Thường', 'Đôi', 'VIP') THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Loại ghế phải là Thường, Đôi hoặc VIP';
     END IF;
 
     SELECT COUNT(*) INTO v_soSuat
@@ -328,59 +336,34 @@ END$$
 
 DELIMITER ;
 
-
 -- =====================================================================
--- HAM 1: fn_TyLeSuDungPhong  (ket qua la ty le % su dung phong)
--- =====================================================================
-SELECT MaRap, MaPhong, Ngay, TyLe AS TyLeSuDung_Phantram
-FROM (
-    SELECT 1 AS STT, 'R01' AS MaRap, 'P01' AS MaPhong, CAST('2026-12-01' AS DATE) AS Ngay,
-           fn_TyLeSuDungPhong('R01','P01','2026-12-01') AS TyLe
-    UNION ALL SELECT 2,  'R02','P02', '2026-12-01', fn_TyLeSuDungPhong('R02','P02','2026-12-01')
-    UNION ALL SELECT 3,  'R03','P03', '2026-12-01', fn_TyLeSuDungPhong('R03','P03','2026-12-01')
-    UNION ALL SELECT 4,  'R04','P04', '2026-12-01', fn_TyLeSuDungPhong('R04','P04','2026-12-01')
-    UNION ALL SELECT 5,  'R05','P05', '2026-12-01', fn_TyLeSuDungPhong('R05','P05','2026-12-01')
-    UNION ALL SELECT 6,  'R01','P01', '2026-12-02', fn_TyLeSuDungPhong('R01','P01','2026-12-02')
-    UNION ALL SELECT 7,  'R02','P02', '2026-12-02', fn_TyLeSuDungPhong('R02','P02','2026-12-02')
-    UNION ALL SELECT 8,  'R03','P03', '2026-12-02', fn_TyLeSuDungPhong('R03','P03','2026-12-02')
-    UNION ALL SELECT 9,  'R04','P04', '2026-12-02', fn_TyLeSuDungPhong('R04','P04','2026-12-02')
-    UNION ALL SELECT 10, 'R05','P05', '2026-12-02', fn_TyLeSuDungPhong('R05','P05','2026-12-02')
-    UNION ALL SELECT 11, 'R05','P05', '2026-12-03', fn_TyLeSuDungPhong('R05','P05','2026-12-03')
-) t
-ORDER BY STT;
-
--- =====================================================================
--- HAM 2: fn_TimDayGheTrong  (ket qua la ma ghe dau day, NULL neu khong co)
+-- Hàm Tỷ lệ sử dụng phòng (DEMO)
 -- =====================================================================
 
--- 2.1 Suat nam 2030 (luon chay duoc)
-SELECT sc.MaRap, sc.MaPhong, sc.NgayChieu AS Ngay, sc.MaSuatChieu, c.SoGhe AS SoGheCanTim,
-       fn_TimDayGheTrong(c.MaSuatChieu, c.SoGhe) AS GheDauDay
-FROM (
-    SELECT 1 AS STT, 'SC021' AS MaSuatChieu, 1 AS SoGhe
-    UNION ALL SELECT 2,  'SC021', 2
-    UNION ALL SELECT 3,  'SC021', 3
-    UNION ALL SELECT 4,  'SC021', 4
-    UNION ALL SELECT 5,  'SC021', 5
-    UNION ALL SELECT 6,  'SC022', 5
-    UNION ALL SELECT 7,  'SC022', 6
-) c
-JOIN SUAT_CHIEU sc ON sc.MaSuatChieu = c.MaSuatChieu
+-- 02/12
+SELECT 'R01' AS MaRap, 'P02' AS MaPhong, DATE '2026-12-02' AS Ngay, fn_TyLeSuDungPhong('R01', 'P02', '2026-12-02') AS TyLeSuDung_Phantram,@tong_phut_chieu AS TongPhutSuDung, @gio_ket_thuc_tinh - 480 AS TongPhutHoatDong;
+
+-- 03/12
+SELECT 'R01' AS MaRap, 'P02' AS MaPhong, DATE '2026-12-03' AS Ngay, fn_TyLeSuDungPhong('R01', 'P02', '2026-12-03') AS TyLeSuDung_Phantram, @tong_phut_chieu AS TongPhutSuDung, @gio_ket_thuc_tinh - 480 AS TongPhutHoatDong;
+
+-- 04/12
+SELECT 'R01' AS MaRap, 'P02' AS MaPhong, DATE '2026-12-04' AS Ngay, fn_TyLeSuDungPhong('R01', 'P02', '2026-12-04') AS TyLeSuDung_Phantram, @tong_phut_chieu AS TongPhutSuDung, @gio_ket_thuc_tinh - 480 AS TongPhutHoatDong;
+
+-- 05/12
+SELECT 'R01' AS MaRap, 'P02' AS MaPhong, DATE '2026-12-05' AS Ngay, fn_TyLeSuDungPhong('R01', 'P02', '2026-12-05') AS TyLeSuDung_Phantram, @tong_phut_chieu AS TongPhutSuDung, @gio_ket_thuc_tinh - 480 AS TongPhutHoatDong;
+
+-- 06/12
+SELECT 'R01' AS MaRap, 'P02' AS MaPhong, DATE '2026-12-06' AS Ngay, fn_TyLeSuDungPhong('R01', 'P02', '2026-12-06') AS TyLeSuDung_Phantram, @tong_phut_chieu AS TongPhutSuDung, @gio_ket_thuc_tinh - 480 AS TongPhutHoatDong;
+
+-- =====================================================================
+-- Hàm tìm dãy ghế trống (Demo)
+-- =====================================================================
+
+SELECT c.MaSuatChieu, fn_TimDayGheTrong(c.MaSuatChieu, c.SoGhe, c.LoaiGhe) AS MaGheDauDay, c.SoGhe, c.LoaiGhe
+FROM (SELECT 1 AS STT, 'SC2401' AS MaSuatChieu, 4 AS SoGhe, 'Thường' AS LoaiGhe
+      UNION ALL SELECT 2, 'SC2419', 3, 'Thường'
+      UNION ALL SELECT 3, 'SC2402', 3, 'VIP'
+      UNION ALL SELECT 4, 'SC2433', 4, 'VIP'
+      UNION ALL SELECT 5, 'SC2434', 1, 'Đôi') c
 ORDER BY c.STT;
 
--- 2.2 Suat du lieu goc ngay 01/12/2026 (chi chay duoc TRUOC ngay 01/12/2026,
---     sau ngay do ham bao loi suat da chieu -> bo qua phan nay)
-SELECT sc.MaRap, sc.MaPhong, sc.NgayChieu AS Ngay, sc.MaSuatChieu, c.SoGhe AS SoGheCanTim,
-       fn_TimDayGheTrong(c.MaSuatChieu, c.SoGhe) AS GheDauDay
-FROM (
-    SELECT 1 AS STT, 'SC001' AS MaSuatChieu, 1 AS SoGhe
-    UNION ALL SELECT 2, 'SC001', 2
-    UNION ALL SELECT 3, 'SC001', 3
-    UNION ALL SELECT 4, 'SC002', 3
-    UNION ALL SELECT 5, 'SC004', 1
-    UNION ALL SELECT 6, 'SC004', 2
-) c
-JOIN SUAT_CHIEU sc ON sc.MaSuatChieu = c.MaSuatChieu
-ORDER BY c.STT;
-
-COMMIT;
