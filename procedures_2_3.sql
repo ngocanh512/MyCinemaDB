@@ -239,33 +239,35 @@ DELIMITER ;
 -- =====================================================================
 
 -- ---- Thủ tục 1 ----
--- (a) Không lọc: toàn bộ suất chiếu, kèm thể loại, ghế trống, trạng thái
-CALL sp_TimKiemSuatChieu(NULL, NULL, NULL, NULL, NULL, NULL, NULL, FALSE);
+-- Dữ liệu minh họa: demo_data_2_3.sql (suất chiếu 08/12 - 10/12/2026)
+-- (a) Lịch chiếu 08/12 - 10/12: kèm thể loại, ghế trống, trạng thái
+CALL sp_TimKiemSuatChieu(NULL, NULL, NULL, '2026-12-08', '2026-12-10', NULL, NULL, FALSE);
 -- (b) Tìm không dấu: 'bo sua' -> "Bò sữa bay"
-CALL sp_TimKiemSuatChieu('bo sua', NULL, NULL, NULL, NULL, NULL, NULL, FALSE);
+CALL sp_TimKiemSuatChieu('bo sua', NULL, NULL, '2026-12-08', '2026-12-10', NULL, NULL, FALSE);
 -- (c) Khách 15 tuổi: ẩn các phim T16, T18 (RBNN 3)
-CALL sp_TimKiemSuatChieu(NULL, NULL, NULL, NULL, NULL, NULL, 15, FALSE);
--- (d) Phim Tâm lý (TL03) tại rạp R01..R03 bất kỳ, chỉ suất còn ghế
-CALL sp_TimKiemSuatChieu(NULL, NULL, 'TL03', NULL, NULL, NULL, NULL, TRUE);
--- (e) Rạp R01, ngày 02/12 - 03/12, định dạng 2D
-CALL sp_TimKiemSuatChieu('', 'R01', '', '2026-12-02', '2026-12-03', '2D', NULL, FALSE);
+CALL sp_TimKiemSuatChieu(NULL, NULL, NULL, '2026-12-08', '2026-12-10', NULL, 15, FALSE);
+-- (d) Phim Tình cảm (TL05), chỉ suất còn ghế (bỏ suất đã hết vé)
+CALL sp_TimKiemSuatChieu(NULL, NULL, 'TL05', '2026-12-08', '2026-12-10', NULL, NULL, TRUE);
+-- (e) Rạp R01, định dạng 2D; chuỗi rỗng '' được hiểu như không lọc
+CALL sp_TimKiemSuatChieu('', 'R01', '', '2026-12-08', '2026-12-10', '2D', NULL, FALSE);
 -- Các trường hợp lỗi (bỏ dấu -- để chạy):
--- CALL sp_TimKiemSuatChieu(NULL, NULL, NULL, '2026-12-05', '2026-12-01', NULL, NULL, FALSE); -- ngày ngược
+-- CALL sp_TimKiemSuatChieu(NULL, NULL, NULL, '2026-12-10', '2026-12-08', NULL, NULL, FALSE); -- ngày ngược
 -- CALL sp_TimKiemSuatChieu(NULL, 'R99', NULL, NULL, NULL, NULL, NULL, FALSE);               -- rạp không có
 -- CALL sp_TimKiemSuatChieu(NULL, NULL, 'TL99', NULL, NULL, NULL, NULL, FALSE);              -- thể loại không có
 -- CALL sp_TimKiemSuatChieu(NULL, NULL, NULL, NULL, NULL, '4DX', NULL, FALSE);               -- định dạng sai
 -- CALL sp_TimKiemSuatChieu(NULL, NULL, NULL, NULL, NULL, NULL, -3, FALSE);                  -- tuổi sai
 
 -- ---- Thủ tục 2 ----
--- (a) Toàn hệ thống tháng 12/2026, không đặt ngưỡng
-CALL sp_ThongKeHieuQuaPhim('2026-12-01', '2026-12-31', NULL, 0, 0);
--- (b) Chỉ phim có doanh thu >= 400.000đ (HAVING lọc bớt)
-CALL sp_ThongKeHieuQuaPhim('2026-12-01', '2026-12-31', NULL, 400000, 0);
+-- Doanh thu vé tính theo giá vé (trước khi trừ khuyến mãi trên hóa đơn)
+-- (a) Toàn hệ thống 08/12 - 10/12, không đặt ngưỡng
+CALL sp_ThongKeHieuQuaPhim('2026-12-08', '2026-12-10', NULL, 0, 0);
+-- (b) Chỉ phim có doanh thu >= 200.000đ (HAVING lọc bớt)
+CALL sp_ThongKeHieuQuaPhim('2026-12-08', '2026-12-10', NULL, 200000, 0);
 -- (c) Chỉ phim lấp đầy >= 60% ghế
-CALL sp_ThongKeHieuQuaPhim('2026-12-01', '2026-12-31', NULL, 0, 60);
+CALL sp_ThongKeHieuQuaPhim('2026-12-08', '2026-12-10', NULL, 0, 60);
 -- (d) Riêng rạp R02
-CALL sp_ThongKeHieuQuaPhim('2026-12-01', '2026-12-31', 'R02', 0, 0);
+CALL sp_ThongKeHieuQuaPhim('2026-12-08', '2026-12-10', 'R02', 0, 0);
 -- Các trường hợp lỗi:
--- CALL sp_ThongKeHieuQuaPhim(NULL, '2026-12-31', NULL, 0, 0);              -- thiếu ngày
--- CALL sp_ThongKeHieuQuaPhim('2026-12-01', '2026-12-31', NULL, -5, 0);     -- doanh thu âm
--- CALL sp_ThongKeHieuQuaPhim('2026-12-01', '2026-12-31', NULL, 0, 150);    -- tỷ lệ > 100
+-- CALL sp_ThongKeHieuQuaPhim(NULL, '2026-12-10', NULL, 0, 0);              -- thiếu ngày
+-- CALL sp_ThongKeHieuQuaPhim('2026-12-08', '2026-12-10', NULL, -5, 0);     -- doanh thu âm
+-- CALL sp_ThongKeHieuQuaPhim('2026-12-08', '2026-12-10', NULL, 0, 150);    -- tỷ lệ > 100
