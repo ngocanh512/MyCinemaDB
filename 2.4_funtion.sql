@@ -287,7 +287,7 @@ BEGIN
 
     IF v_batDau + INTERVAL 15 MINUTE < NOW() THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Suất chiếu đã bắt đầu hoặc đã chiếu xong';
+            SET MESSAGE_TEXT = 'Suất chiếu đã quá hạn để đặt vé';
     END IF;
 
     -- ---------- 2. DUYỆT CON TRỎ (LOOP) ----------
