@@ -197,14 +197,13 @@ SET NgayChieu = '2026-12-02'
 WHERE MaSuatChieu = 'SC004';
 
 
--- CASE 4: Chuyển SC005 sang phòng R03-P03.
--- SC003 kết thúc 15:35, SC005 bắt đầu 20:15.
--- Khoảng cách lớn hơn 15 phút.
+-- CASE 4: Đổi giờ SC005 trong cùng phòng R05-P05 thành 20:30-22:25.
+-- Phòng R05-P05 ngày 01/12 không có suất nào khác.
 -- Mong đợi: UPDATE thành công.
 
 UPDATE SUAT_CHIEU
-SET MaRap = 'R03',
-    MaPhong = 'P03'
+SET GioBatDau = '20:30:00',
+    GioKetThuc = '22:25:00'
 WHERE MaSuatChieu = 'SC005';
 
 
@@ -241,14 +240,16 @@ SET NgayChieu = '2026-12-01',
 WHERE MaSuatChieu = 'SC004';
 
 
--- CASE 4: Cập nhật giờ chiếu SC005 thành 15:40-17:30.
--- SC003 kết thúc 15:35, khoảng cách chỉ còn 5 phút.
+-- CASE 4: Chuyển SC002 (chưa có vé) sang phòng R03-P03, chiếu 15:40-17:25.
+-- SC003 ở R03-P03 kết thúc 15:35, khoảng cách chỉ còn 5 phút.
 -- Mong đợi: Bị trigger chặn.
 
 UPDATE SUAT_CHIEU
-SET GioBatDau = '15:40:00',
-    GioKetThuc = '17:30:00'
-WHERE MaSuatChieu = 'SC005';
+SET MaRap = 'R03',
+    MaPhong = 'P03',
+    GioBatDau = '15:40:00',
+    GioKetThuc = '17:25:00'
+WHERE MaSuatChieu = 'SC002';
 
 
 -- Hoàn tác toàn bộ dữ liệu UPDATE kiểm thử.
